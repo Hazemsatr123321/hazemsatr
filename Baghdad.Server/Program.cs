@@ -23,7 +23,6 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // --- Configure Pipeline ---
-
 // Apply migrations automatically on startup
 using (var scope = app.Services.CreateScope())
 {
@@ -41,6 +40,13 @@ app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 
 // --- API Endpoints ---
+
+app.MapGet("/api/documents", async (AppDbContext db) => {
+    return await db.Documents
+        .OrderByDescending(d => d.UpdatedAt)
+        .Select(d => new DocumentInfo(d.Id, d.UpdatedAt))
+        .ToListAsync();
+});
 
 app.MapPost("/api/documents", async (DocumentDto docDto, AppDbContext db) => {
     var newDoc = new Document { Content = docDto.Content };
@@ -63,5 +69,6 @@ app.MapGet("/api/status", () => {
 
 app.Run();
 
-// DTO to prevent over-posting and separate concerns from the DB entity
+// DTOs
 public record DocumentDto(string? Id, string Content);
+public record DocumentInfo(string Id, DateTime UpdatedAt);
