@@ -1,12 +1,15 @@
-using System.Collections.Concurrent;
+using Microsoft.EntityFrameworkCore;
+using Baghdad.Server.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// --- Configure Services ---
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite(connectionString));
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-// Add CORS services
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", builder =>
@@ -19,7 +22,15 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// --- Configure Pipeline ---
+
+// Apply migrations automatically on startup
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -27,29 +38,22 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-// Use CORS middleware
 app.UseCors("AllowAll");
 
-// --- Document Storage and Endpoints ---
+// --- API Endpoints ---
 
-// In-memory document store
-var documents = new ConcurrentDictionary<string, Document>();
-
-app.MapPost("/api/documents", (Document doc) => {
-    var id = Guid.NewGuid().ToString();
-    var newDoc = doc with { Id = id };
-    if (documents.TryAdd(id, newDoc))
-    {
-        return Results.Created($"/api/documents/{id}", newDoc);
-    }
-    return Results.StatusCode(500);
+app.MapPost("/api/documents", async (DocumentDto docDto, AppDbContext db) => {
+    var newDoc = new Document { Content = docDto.Content };
+    db.Documents.Add(newDoc);
+    await db.SaveChangesAsync();
+    return Results.Created($"/api/documents/{newDoc.Id}", newDoc);
 });
 
-app.MapGet("/api/documents/{id}", (string id) => {
-    return documents.TryGetValue(id, out var doc)
-        ? Results.Ok(doc)
-        : Results.NotFound();
+app.MapGet("/api/documents/{id}", async (string id, AppDbContext db) => {
+    return await db.Documents.FindAsync(id)
+        is Document doc
+            ? Results.Ok(doc)
+            : Results.NotFound();
 });
 
 app.MapGet("/api/status", () => {
@@ -59,4 +63,5 @@ app.MapGet("/api/status", () => {
 
 app.Run();
 
-public record Document(string? Id, string Content);
+// DTO to prevent over-posting and separate concerns from the DB entity
+public record DocumentDto(string? Id, string Content);
