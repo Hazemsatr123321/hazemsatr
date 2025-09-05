@@ -21,7 +21,7 @@ function DocumentListPage() {
         {documents.map((doc) => (
           <li key={doc.id} style={{ margin: "10px 0", padding: "10px", border: "1px solid #444", borderRadius: "5px" }}>
             <Link to={`/editor/${doc.id}`}>
-              Document ID: {doc.id}
+              <strong>{doc.title}</strong>
               <br />
               <small>Last updated: {new Date(doc.updatedAt).toLocaleString()}</small>
             </Link>

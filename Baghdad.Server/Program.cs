@@ -44,15 +44,33 @@ app.UseCors("AllowAll");
 app.MapGet("/api/documents", async (AppDbContext db) => {
     return await db.Documents
         .OrderByDescending(d => d.UpdatedAt)
-        .Select(d => new DocumentInfo(d.Id, d.UpdatedAt))
+        .Select(d => new DocumentInfo(d.Id, d.Title, d.UpdatedAt))
         .ToListAsync();
 });
 
 app.MapPost("/api/documents", async (DocumentDto docDto, AppDbContext db) => {
-    var newDoc = new Document { Content = docDto.Content };
+    var newDoc = new Document {
+        Title = docDto.Title,
+        Content = docDto.Content
+    };
     db.Documents.Add(newDoc);
     await db.SaveChangesAsync();
     return Results.Created($"/api/documents/{newDoc.Id}", newDoc);
+});
+
+app.MapPut("/api/documents/{id}", async (string id, DocumentDto updatedDoc, AppDbContext db) => {
+    var doc = await db.Documents.FindAsync(id);
+    if (doc is null)
+    {
+        return Results.NotFound();
+    }
+
+    doc.Title = updatedDoc.Title;
+    doc.Content = updatedDoc.Content;
+    doc.UpdatedAt = DateTime.UtcNow;
+
+    await db.SaveChangesAsync();
+    return Results.NoContent();
 });
 
 app.MapGet("/api/documents/{id}", async (string id, AppDbContext db) => {
@@ -70,5 +88,5 @@ app.MapGet("/api/status", () => {
 app.Run();
 
 // DTOs
-public record DocumentDto(string? Id, string Content);
-public record DocumentInfo(string Id, DateTime UpdatedAt);
+public record DocumentDto(string? Id, string Title, string Content);
+public record DocumentInfo(string Id, string Title, DateTime UpdatedAt);
