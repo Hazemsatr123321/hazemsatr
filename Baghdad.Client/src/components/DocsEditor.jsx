@@ -5,7 +5,7 @@ import "react-quill/dist/quill.snow.css";
 
 const API_URL = "http://localhost:5117";
 
-// Toolbar now also takes title and onTitleChange props
+// Toolbar now includes the table button
 const CustomToolbar = ({ onSave, title, onTitleChange }) => (
   <div id="toolbar">
     <input
@@ -18,6 +18,8 @@ const CustomToolbar = ({ onSave, title, onTitleChange }) => (
     <button className="ql-bold" title="Bold"></button>
     <button className="ql-italic" title="Italic"></button>
     <button className="ql-underline" title="Underline"></button>
+    <button className="ql-image" title="Image"></button>
+    <button className="ql-table" title="Table"></button>
     <button onClick={onSave} style={{ marginLeft: "10px", padding: "3px 5px", cursor: "pointer" }}>Save</button>
   </div>
 );
@@ -27,6 +29,17 @@ function DocsEditor() {
   const [content, setContent] = useState("");
   const { id: urlId } = useParams();
   const navigate = useNavigate();
+
+  const modules = {
+    toolbar: {
+      container: "#toolbar",
+    },
+  };
+
+  const formats = [
+    "bold", "italic", "underline",
+    "image", "table"
+  ];
 
   // Effect to load document from URL
   useEffect(() => {
@@ -88,7 +101,8 @@ function DocsEditor() {
         theme="snow"
         value={content}
         onChange={setContent}
-        modules={{ toolbar: { container: "#toolbar" } }}
+        modules={modules}
+        formats={formats}
         style={{ height: "100%" }}
       />
     </div>
