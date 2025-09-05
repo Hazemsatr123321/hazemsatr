@@ -9,8 +9,11 @@
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  direction: rtl;
+}
+
+#toolbar {
+  text-align: right;
+  padding: 8px;
+  border-bottom: 1px solid #444;
 }
