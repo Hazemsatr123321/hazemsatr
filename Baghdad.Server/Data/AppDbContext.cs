@@ -9,4 +9,5 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<Document> Documents { get; set; }
+    public DbSet<Sheet> Sheets { get; set; }
 }
